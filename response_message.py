@@ -6,7 +6,6 @@ def response_message(event):
     group_id, user_id = event.source.group_id, event.source.user_id
 
     result = call_langchain_with_history(request_message, group_id + user_id)
-    print("result = " + result)
     return TextMessage(text=result)
 
 

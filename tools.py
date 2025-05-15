@@ -17,10 +17,6 @@ llm = ChatOpenAI(
     temperature=0
 )
 
-upload_tools = [download_file]
-
-llm_with_upload_tools = llm.bind_tools(upload_tools)
-
 @tool
 def upload_file(query, session_id):
     """
@@ -30,6 +26,9 @@ def upload_file(query, session_id):
             query: string of user query
             session_id: session_id
     """
+    upload_tools = [download_file]
+    llm_with_upload_tools = llm.bind_tools(upload_tools)
+
     file_data = get_files_data()
     messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
     # print(messages)
@@ -46,10 +45,6 @@ def upload_file(query, session_id):
         # result = llm_with_upload_tools.invoke(messages)
         # print(result)
 
-delete_tools = [delete_file_google]
-
-llm_with_delete_tools = llm.bind_tools(delete_tools)
-
 @tool
 def delete_file(query, session_id):
     """
@@ -59,7 +54,9 @@ def delete_file(query, session_id):
             query: คำสั่งจากผู้ใช้ เช่น "ลบไฟล์ล่าสุด"
             session_id: session_id
     """
-    print(query)
+    delete_tools = [delete_file_google]
+    llm_with_delete_tools = llm.bind_tools(delete_tools)
+
     file_data = show_files()
     messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
     # print(messages)
@@ -83,10 +80,6 @@ def delete_file(query, session_id):
             print('tool msg --------> ', tool_msg.content)
         return tool_message
 
-sharing_tools = [sharing_file_google]
-
-llm_with_sharing_tools = llm.bind_tools(sharing_tools)
-
 @tool
 def sharing_file(query, session_id):
     """
@@ -96,20 +89,18 @@ def sharing_file(query, session_id):
             query: คำสั่งจากผู้ใช้ เช่น "ขอลิ้งไฟล์ล่าสุด"
             session_id: session_id
     """
-    print(query)
+    sharing_tools = [sharing_file_google]
+    llm_with_sharing_tools = llm.bind_tools(sharing_tools)
+
     file_data = show_files()
     messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
-    # print(messages)
     ai_message =  llm_with_sharing_tools.invoke(messages)
-    # print("ai_message "+ai_message.tool_calls)
-    # messages.append(ai_message)
     tool_message = []
 
     if ai_message.tool_calls:
         for tool_call in ai_message.tool_calls:
             tool_name = tool_call['name'].lower()
             selected_tool = {
-                # "sharing_file": sharing_file,
                 "sharing_file_google": sharing_file_google
             }.get(tool_name)
             # print('selected call --------> ',  selected_tool)
@@ -120,11 +111,10 @@ def sharing_file(query, session_id):
             print('tool msg --------> ', tool_msg.content)
         return tool_message
 
-main_tools = [show_files_tool, delete_file, upload_file, sharing_file]
-
-llm_with_tools = llm.bind_tools(main_tools)
-
 def call_langchain_with_history(query, session_id):
+    main_tools = [show_files_tool, delete_file, upload_file, sharing_file]
+    llm_with_tools = llm.bind_tools(main_tools)
+
     chat_history = MongoDBChatMessageHistory(
         session_id=session_id,
         connection_string="mongodb://localhost:27017/",
@@ -148,15 +138,9 @@ def call_langchain_with_history(query, session_id):
             "If tool calls have parameter session_id use this: " + session_id
         ))
 
-    # messages = chat_history.messages.copy()
-    # print("history -->>>>> ", messages)
-
     user_msg = HumanMessage(content="[current] by user: " + query)
     messages = [system_msg] + history_message + [user_msg]
-    # messages.append(user_msg)
-    # chat_history.add_user_message(query)
-    print("user message --->>>> ", user_msg)
-    print("new message -->>>>>> ", messages)
+    chat_history.add_user_message(query)
 
     ai_message = llm_with_tools.invoke(messages)
     messages.append(ai_message)
@@ -174,18 +158,16 @@ def call_langchain_with_history(query, session_id):
 
             if selected_tool:
                 tool_response = selected_tool.invoke(tool_call)
-                # print(tool_response)
                 tool_msg = ToolMessage(
                     tool_call_id=tool_call["id"],
                     content=str(tool_response)
                 )
                 messages.append(tool_msg)
-        # print(messages)
         final_response = llm_with_tools.invoke(messages)
         messages.append(final_response)
         chat_history.add_ai_message(final_response.content)
-        # print(final_response.content)
         return final_response.content
+    
     chat_history.add_ai_message(ai_message.content)
     return ai_message.content
 
