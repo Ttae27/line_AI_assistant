@@ -6,6 +6,27 @@ from dotenv import load_dotenv
 from google_drive import show_files, sharing_file_google, delete_file_google, show_files_tool
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
 from mongo import get_files_data, download_file
+from datetime import datetime, timezone
+
+class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
+    def add_user_message(self, message: str):
+        self.collection.insert_one({
+            "session_id": self.session_id,
+            "type": "human",
+            "content": message,
+            "created_at": datetime.now(timezone.utc)
+        })
+
+    def add_ai_message(self, message: str):
+        self.collection.insert_one({
+            "session_id": self.session_id,
+            "type": "ai",
+            "content":  message,
+            "created_at": datetime.now(timezone.utc)
+        })
+
+    def get_history(self):
+        return self.collection.find()
 
 
 load_dotenv()
@@ -115,21 +136,22 @@ def call_langchain_with_history(query, session_id):
     main_tools = [show_files_tool, delete_file, upload_file, sharing_file]
     llm_with_tools = llm.bind_tools(main_tools)
 
-    chat_history = MongoDBChatMessageHistory(
+    chat_history = TimestampedMongoDBChatMessageHistory(
         session_id=session_id,
         connection_string="mongodb://localhost:27017/",
-        database_name="historyDB",
+        database_name="historyDB_2",
         collection_name="chat"
     )
 
     history_message = []
-    for msg in chat_history.messages:
-        if isinstance(msg, HumanMessage):
-            history_message.append(HumanMessage(content=f'[history] by user: {msg.content}'))
-        elif isinstance(msg, AIMessage):
-            history_message.append(AIMessage(content=f'[history] by ai: {msg.content}'))
-        else:
-            continue
+    if chat_history.get_history():
+        for msg in chat_history.get_history():
+            if msg['type'] == 'human':
+                history_message.append(HumanMessage(content=f'[history] at time {msg['created_at']} by user: {msg['content']}'))
+            elif msg['type'] == 'ai':
+                history_message.append(AIMessage(content=f'[history] at time {msg['created_at']} by ai: {msg['content']}'))
+            else:
+                continue
 
     system_msg = SystemMessage(content=(
             "You are a helpful assistant. You will see past messages labeled as [history]. "

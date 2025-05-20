@@ -8,7 +8,7 @@ conn_string = "mongodb://localhost:27017/"
 def mongo_conn():
     try:
         conn = MongoClient("mongodb://localhost:27017/")
-        return conn.historyDB
+        return conn.historyDB_2
     except Exception as err:
         print(f"Error in connection : {err}")
 

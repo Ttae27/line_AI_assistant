@@ -10,6 +10,7 @@ from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.webhooks import MessageEvent, TextMessageContent, FileMessageContent 
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
+from tools import TimestampedMongoDBChatMessageHistory
 from langchain_core.messages import HumanMessage
 
 from linebot.v3.messaging import (
@@ -74,13 +75,13 @@ def handle_file(event: MessageEvent):
 
         metadata = {"groupid": event.source.group_id, "userid": event.source.user_id, "about": summarized(content_response, ext)}
         upload_file(content_response, file_name, metadata, fs)
-        chat_history = MongoDBChatMessageHistory(
+        chat_history = TimestampedMongoDBChatMessageHistory(
             session_id=event.source.group_id + event.source.user_id,
             connection_string="mongodb://localhost:27017/",
-            database_name="historyDB",
+            database_name="historyDB_2",
             collection_name="chat"
         )
-        chat_history.add_user_message(HumanMessage(content=f'เซฟไฟล์ {file_name} แล้ว วันที่ {get_file_data(file_name)['uploadDate']}'))
+        chat_history.add_user_message(f'เซฟไฟล์ {file_name} แล้ว วันที่ {get_file_data(file_name)['uploadDate']}')
 
         messaging_api = MessagingApi(api_client)
         messaging_api.reply_message(
