@@ -38,6 +38,15 @@ llm = ChatOpenAI(
     temperature=0
 )
 
+def save_conversation(query, session_id):
+    chat_history = TimestampedMongoDBChatMessageHistory(
+        session_id=session_id,
+        connection_string="mongodb://localhost:27017/",
+        database_name="historyDB_2",
+        collection_name="chat"
+    )
+    chat_history.add_user_message(query)
+
 @tool
 def upload_file(query, session_id):
     """
