@@ -60,6 +60,7 @@ def extract_text_from_pptx_bytes(file_bytes: bytearray) -> str:
     return "\n".join(text_runs)
 
 def summarized(file_bytes: bytearray, file_type):
+    text = ""
     if file_type == 'docx':
         text = extract_text_from_docx_bytes(file_bytes)
     elif file_type == 'xlsx':

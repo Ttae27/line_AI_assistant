@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from google_drive import show_files, sharing_file_google, delete_file_google, show_files_tool
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
 from mongo import get_files_data, download_file
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
     def add_user_message(self, message: str):
@@ -14,7 +14,7 @@ class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
             "session_id": self.session_id,
             "type": "human",
             "content": message,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(timezone(timedelta(hours = 7))).isoformat()
         })
 
     def add_ai_message(self, message: str):
@@ -22,7 +22,7 @@ class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
             "session_id": self.session_id,
             "type": "ai",
             "content":  message,
-            "created_at": datetime.now(timezone.utc)
+            "created_at": datetime.now(timezone(timedelta(hours = 7))).isoformat()
         })
 
     def get_history(self):
