@@ -22,7 +22,7 @@ def to_bytes(path):
         byte_array = file.read() 
     return byte_array 
 
-def upload_file_drive(file: bytearray, file_name: str, about: str):
+def upload_file_drive(file: bytearray, file_name: str, about: str, session_id: str, user_id: str):
     """Upload file 
 
     Args:
@@ -33,7 +33,11 @@ def upload_file_drive(file: bytearray, file_name: str, about: str):
     try:
         file_metadata = {
             "name": file_name,
-            "description": about
+            "description": about,
+            "properties": {
+                "sesion_id": session_id,
+                "user_id": user_id
+            }
         }
         mimetype = 'application/' + file_name.split('.')[1]
         # print(mimetype)
@@ -76,7 +80,7 @@ def sharing_file_google(file_id: str):
     return response_share_link ['webViewLink']
 
 @tool
-def show_files_tool(parent_folder_id=None):
+def show_files_tool(session_id):
     """
         โชว์ไฟล์ใน google drive
 
@@ -86,9 +90,12 @@ def show_files_tool(parent_folder_id=None):
         # q=f"'{parent_folder_id}' in parents and trashed=false" if parent_folder_id else None,
         q=None,
         pageSize=1000,
-        fields="nextPageToken, files(id, name, mimeType, createdTime, description)"
+        fields="nextPageToken, files(id, name, mimeType, createdTime, description, properties)"
     ).execute()
-    items = results.get('files', [])
+    items = []
+    for item in results.get('files', []):
+        if item['properties']['group_id'] == session_id:
+            items.append(item)
 
     return items
 

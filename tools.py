@@ -5,7 +5,7 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, System
 from dotenv import load_dotenv
 from google_drive import show_files, sharing_file_google, delete_file_google, show_files_tool
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
-from mongo import get_files_data, download_file
+from mongo import get_files_data, upload_file_to_google
 from datetime import datetime, timezone, timedelta
 
 class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
@@ -56,18 +56,18 @@ def upload_file(query, session_id):
             query: string of user query
             session_id: session_id
     """
-    upload_tools = [download_file]
+    upload_tools = [upload_file_to_google]
     llm_with_upload_tools = llm.bind_tools(upload_tools)
 
     file_data = get_files_data()
-    messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
+    messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data)) + '. this is a session id' + session_id]
     # print(messages)
     ai_message =  llm_with_upload_tools.invoke(messages)
     # print(ai_message.tool_calls)
     messages.append(ai_message)
 
     if ai_message.tool_calls:
-        selected_tool = download_file
+        selected_tool = upload_file_to_google
         # print('selected call --------> ',  selected_tool)
         tool_msg = selected_tool.invoke(ai_message.tool_calls[-1])
         # print('tool msg --------> ', tool_msg.content)
@@ -141,7 +141,7 @@ def sharing_file(query, session_id):
             print('tool msg --------> ', tool_msg.content)
         return tool_message
 
-def call_langchain_with_history(query, session_id):
+def call_langchain_with_history(query, session_id, user_id):
     main_tools = [show_files_tool, delete_file, upload_file, sharing_file]
     llm_with_tools = llm.bind_tools(main_tools)
 
@@ -166,7 +166,7 @@ def call_langchain_with_history(query, session_id):
             "You are a helpful assistant. You will see past messages labeled as [history]. "
             "Focus only on the message labeled [current] to determine your response. "
             "Do NOT perform tool calls unless the [current] message clearly requests an action like upload, delete, or list files." 
-            "If tool calls have parameter session_id use this: " + session_id
+            "If tool calls have parameter session_id use this: " + session_id + "and If tool calls have parameter session_id use this: " + user_id
         ))
 
     user_msg = HumanMessage(content="[current] by user: " + query)
