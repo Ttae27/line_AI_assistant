@@ -4,6 +4,7 @@ from googleapiclient.http import MediaIoBaseUpload
 from googleapiclient.errors import HttpError
 from googleapiclient.discovery import build
 from langchain_core.tools import tool
+from mongo import db, fs
 
 SCOPES = ['https://www.googleapis.com/auth/drive']
 SERVICE_ACCOUNT_FILE = 'line-chat-bot-softnix-ff77b1c1d463.json'
@@ -44,6 +45,22 @@ def upload_file_drive(file: bytearray, file_name: str, about: str):
         file = None
 
     return file.get("id")
+
+@tool
+def download_file(filename: str):
+    """
+        Upload just one file from user query 
+
+        Args:
+        filename: name of file
+    """
+    data = db.files.files.find_one({"filename": filename})
+    fs_id = data['_id']
+    out_data = fs.get(fs_id).read()
+    file_id = upload_file_drive(bytearray(out_data), filename, data['about'])
+    if file_id:
+        return "เซฟไฟล์เรียบร้อย"
+    return 'error'
 
 @tool
 def sharing_file_google(file_id: str):
