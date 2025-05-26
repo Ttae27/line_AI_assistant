@@ -37,6 +37,15 @@ llm = ChatOpenAI(
     temperature=0
 )
 
+def save_conversation(query, session_id):
+    chat_history = TimestampedMongoDBChatMessageHistory(
+        session_id=session_id,
+        connection_string="mongodb://localhost:27017/",
+        database_name="historyDB_2",
+        collection_name="chat"
+    )
+    chat_history.add_user_message(query)
+
 @tool
 def upload_file(query, session_id):
     """
@@ -110,7 +119,7 @@ def sharing_file(query, session_id):
             print('tool msg --------> ', tool_msg.content)
         return tool_message
 
-def call_langchain_with_history(query, session_id):
+def call_langchain_with_history(query, session_id, user_id):
     main_tools = [show_files_tool, delete_file, upload_file, sharing_file]
     llm_with_tools = llm.bind_tools(main_tools)
 
@@ -135,7 +144,7 @@ def call_langchain_with_history(query, session_id):
             "You are a helpful assistant. You will see past messages labeled as [history]. "
             "Focus only on the message labeled [current] to determine your response. "
             "Do NOT perform tool calls unless the [current] message clearly requests an action like upload, delete, or list files." 
-            "If tool calls have parameter session_id use this: " + session_id
+            "If tool calls have parameter session_id use this: " + session_id + "and If tool calls have parameter session_id use this: " + user_id
         ))
 
     user_msg = HumanMessage(content="[current] by user: " + query)

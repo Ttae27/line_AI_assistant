@@ -24,7 +24,11 @@ def upload_file_drive(file: bytearray, file_name: str, about: str):
     try:
         file_metadata = {
             "name": file_name,
-            "description": about
+            "description": about,
+            "properties": {
+                "sesion_id": session_id,
+                "user_id": user_id
+            }
         }
         mimetype = 'application/' + file_name.split('.')[1]
         media = MediaIoBaseUpload(io.BytesIO(file), mimetype)
@@ -83,16 +87,19 @@ def sharing_file_google(file_id: str):
 @tool
 def show_files_tool():
     """
-        โชว์ไฟล์ใน google drive
+        โชว์ไฟล์ใน google drive ไม่ต้องให้ลิ้งค์
 
         return id name mimeType createdTime and description
     """
     results = service.files().list(
         q=None,
         pageSize=1000,
-        fields="nextPageToken, files(id, name, mimeType, createdTime, description)"
+        fields="nextPageToken, files(id, name, mimeType, createdTime, description, properties)"
     ).execute()
-    items = results.get('files', [])
+    items = []
+    for item in results.get('files', []):
+        if item['properties']['group_id'] == session_id:
+            items.append(item)
 
     return items
 

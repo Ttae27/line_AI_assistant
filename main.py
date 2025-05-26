@@ -47,12 +47,13 @@ def handle_message(event: MessageEvent):
         line_bot_api = MessagingApi(api_client)
         
         reply_message = response_message(event)
-        line_bot_api.reply_message(
-            ReplyMessageRequest(
-                reply_token=event.reply_token,
-                messages=[reply_message]
+        if reply_message:
+            line_bot_api.reply_message(
+                ReplyMessageRequest(
+                    reply_token=event.reply_token,
+                    messages=[reply_message]
+                )
             )
-        )
 
 @handler.add(MessageEvent, message= FileMessageContent)
 def handle_file(event: MessageEvent):
