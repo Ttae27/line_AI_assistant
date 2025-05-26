@@ -13,11 +13,6 @@ credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCO
 
 service = build('drive', 'v3', credentials=credentials)
 
-def to_bytes(path): 
-    with open(path, 'rb') as file: 
-        byte_array = file.read() 
-    return byte_array 
-
 def upload_file_drive(file: bytearray, file_name: str, about: str):
     """Upload file 
 

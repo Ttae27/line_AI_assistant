@@ -7,5 +7,3 @@ def response_message(event):
 
     result = call_langchain_with_history(request_message, group_id + user_id)
     return TextMessage(text=result)
-
-
