@@ -82,7 +82,7 @@ def sharing_file_google(file_id: str):
 @tool
 def show_files_tool(session_id):
     """
-        โชว์ไฟล์ใน google drive
+        โชว์ไฟล์ใน google drive ไม่ต้องให้ลิ้งค์
 
         return id name mimeType createdTime and description
     """
