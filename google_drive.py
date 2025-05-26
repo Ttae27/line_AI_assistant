@@ -25,10 +25,6 @@ def upload_file_drive(file: bytearray, file_name: str, about: str):
         file_metadata = {
             "name": file_name,
             "description": about,
-            "properties": {
-                "sesion_id": session_id,
-                "user_id": user_id
-            }
         }
         mimetype = 'application/' + file_name.split('.')[1]
         media = MediaIoBaseUpload(io.BytesIO(file), mimetype)
@@ -96,12 +92,15 @@ def show_files_tool():
         pageSize=1000,
         fields="nextPageToken, files(id, name, mimeType, createdTime, description, properties)"
     ).execute()
-    items = []
-    for item in results.get('files', []):
-        if item['properties']['group_id'] == session_id:
-            items.append(item)
+    items = results.get('files', [])
 
     return items
+    # items = []
+    # for item in results.get('files', []):
+    #     if item['properties']['group_id'] == session_id:
+    #         items.append(item)
+
+    # return items
 
 @tool
 def delete_file_google(file_id):
