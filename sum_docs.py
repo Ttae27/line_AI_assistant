@@ -1,7 +1,6 @@
 import io
 import fitz 
 import openpyxl
-from enum import Enum
 from docx import Document
 from pptx import Presentation
 from tools import llm
@@ -59,7 +58,7 @@ def extract_text_from_pptx_bytes(file_bytes: bytearray) -> str:
 
     return "\n".join(text_runs)
 
-def summarized(file_bytes: bytearray, file_type):
+def summarized(file_bytes: bytearray, file_type, file_name):
     text = ""
     if file_type == 'docx':
         text = extract_text_from_docx_bytes(file_bytes)
@@ -69,6 +68,8 @@ def summarized(file_bytes: bytearray, file_type):
         text = extract_text_from_pdf_bytes(file_bytes)
     elif file_type == 'pptx':
         text = extract_text_from_pptx_bytes(file_bytes)
+    else:
+        text = file_name
     query = 'short summarization this document: ' + text
     result = llm.invoke([HumanMessage(query)])
     return result.content

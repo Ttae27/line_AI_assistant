@@ -47,7 +47,7 @@ def upload_file_drive(file: bytearray, file_name: str, about: str):
     return file.get("id")
 
 @tool
-def download_file(filename: str):
+def upload_file_tool(filename: str):
     """
         Upload just one file from user query 
 

@@ -3,9 +3,9 @@ from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, SystemMessage
 from dotenv import load_dotenv
-from google_drive import show_files, sharing_file_google, delete_file_google, show_files_tool
+from google_drive import show_files, sharing_file_google, delete_file_google, show_files_tool, upload_file_tool
 from langchain_mongodb.chat_message_histories import MongoDBChatMessageHistory
-from mongo import get_files_data, download_file
+from mongo import get_files_data
 from datetime import datetime, timezone, timedelta
 
 class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
@@ -47,7 +47,7 @@ def upload_file(query, session_id):
             query: string of user query
             session_id: session_id
     """
-    upload_tools = [download_file]
+    upload_tools = [upload_file_tool]
     llm_with_upload_tools = llm.bind_tools(upload_tools)
 
     file_data = get_files_data()
@@ -58,7 +58,7 @@ def upload_file(query, session_id):
     messages.append(ai_message)
 
     if ai_message.tool_calls:
-        selected_tool = download_file
+        selected_tool = upload_file_tool
         # print('selected call --------> ',  selected_tool)
         tool_msg = selected_tool.invoke(ai_message.tool_calls[-1])
         # print('tool msg --------> ', tool_msg.content)
