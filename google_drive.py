@@ -78,7 +78,7 @@ def sharing_file_google(file_id: str):
 @tool
 def show_files_tool(parent_folder_id=None):
     """
-        โชว์ไฟล์ใน google drive
+        โชว์ไฟล์ใน google drive ไม่ต้องให้ลิ้งค์
 
         return id name mimeType createdTime and description
     """
