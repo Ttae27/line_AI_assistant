@@ -57,7 +57,7 @@ def upload_file(query, session_id):
     if ai_message.tool_calls:
         selected_tool = upload_file_tool
         tool_msg = selected_tool.invoke(ai_message.tool_calls[-1])
-        
+
         return tool_msg
 
 @tool
@@ -75,19 +75,11 @@ def delete_file(query, session_id):
     file_data = show_files()
     messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
     ai_message =  llm_with_delete_tools.invoke(messages)
-    tool_message = []
-
     if ai_message.tool_calls:
-        for tool_call in ai_message.tool_calls:
-            tool_name = tool_call['name'].lower()
-            selected_tool = {
-                "delete_file_google": delete_file_google
-            }.get(tool_name)
-            tool_msg = selected_tool.invoke(tool_call)
-            
-            tool_message.append(tool_msg)
-            print('tool msg --------> ', tool_msg.content)
-        return tool_message
+        selected_tool = upload_file_tool
+        tool_msg = selected_tool.invoke(ai_message.tool_calls[-1])
+        
+        return tool_msg
 
 @tool
 def sharing_file(query, session_id):
@@ -112,11 +104,9 @@ def sharing_file(query, session_id):
             selected_tool = {
                 "sharing_file_google": sharing_file_google
             }.get(tool_name)
-            # print('selected call --------> ',  selected_tool)
             tool_msg = selected_tool.invoke(tool_call)
             
             tool_message.append(tool_msg)
-            # messages.append(tool_msg)
             print('tool msg --------> ', tool_msg.content)
         return tool_message
 
@@ -157,7 +147,7 @@ def call_langchain_with_history(query, session_id):
 
     if ai_message.tool_calls:
         for tool_call in ai_message.tool_calls:
-            print(tool_call)
+            print("tool call ----->", tool_call)
             tool_name = tool_call["name"].lower()
             selected_tool = {
                 "show_files_tool": show_files_tool,
