@@ -104,7 +104,8 @@ def delete_file_google(file_id):
         Args:
             file_id: string of file ID
     """
-    service.files().delete(fileId=file_id).execute()
+    test = service.files().delete(fileId=file_id).execute()
+    print(test)
 
     return 'delete successfully'
 

@@ -28,7 +28,6 @@ class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
     def get_history(self):
         return self.collection.find()
 
-
 load_dotenv()
 
 llm = ChatOpenAI(
@@ -52,19 +51,14 @@ def upload_file(query, session_id):
 
     file_data = get_files_data()
     messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
-    # print(messages)
     ai_message =  llm_with_upload_tools.invoke(messages)
-    # print(ai_message.tool_calls)
     messages.append(ai_message)
 
     if ai_message.tool_calls:
         selected_tool = upload_file_tool
-        # print('selected call --------> ',  selected_tool)
         tool_msg = selected_tool.invoke(ai_message.tool_calls[-1])
-        # print('tool msg --------> ', tool_msg.content)
+        
         return tool_msg
-        # result = llm_with_upload_tools.invoke(messages)
-        # print(result)
 
 @tool
 def delete_file(query, session_id):
@@ -80,24 +74,18 @@ def delete_file(query, session_id):
 
     file_data = show_files()
     messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
-    # print(messages)
     ai_message =  llm_with_delete_tools.invoke(messages)
-    # print("ai_message "+ai_message.tool_calls)
-    # messages.append(ai_message)
     tool_message = []
 
     if ai_message.tool_calls:
         for tool_call in ai_message.tool_calls:
             tool_name = tool_call['name'].lower()
             selected_tool = {
-                # "sharing_file": sharing_file,
                 "delete_file_google": delete_file_google
             }.get(tool_name)
-            # print('selected call --------> ',  selected_tool)
             tool_msg = selected_tool.invoke(tool_call)
             
             tool_message.append(tool_msg)
-            # messages.append(tool_msg)
             print('tool msg --------> ', tool_msg.content)
         return tool_message
 
@@ -191,10 +179,4 @@ def call_langchain_with_history(query, session_id):
         return final_response.content
     
     chat_history.add_ai_message(ai_message.content)
-    return ai_message.content
-
-
-# result = call_langchain_with_history('ดูไฟล์ใน google drive', "Cdb64c7273beeb53116ca68976a25209fU0b41d104a18791af412f0e36fbdb084a")
-# result = call_langchain('ขอดูไฟล์ใน google drive บอก id ด้วย')
-# upload_file('อัพโหลดไฟล์อันล่าสุด', "Cdb64c7273beeb53116ca68976a25209fU0b41d104a18791af412f0e36fbdb084a")
-# print(result)
+    return ai_message.content 
