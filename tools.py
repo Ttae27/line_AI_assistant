@@ -84,11 +84,18 @@ def delete_file(query, session_id):
     file_data = show_files()
     messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
     ai_message =  llm_with_delete_tools.invoke(messages)
+    tool_message = []
+
     if ai_message.tool_calls:
-        selected_tool = upload_file_tool
-        tool_msg = selected_tool.invoke(ai_message.tool_calls[-1])
-        
-        return tool_msg
+        for tool_call in ai_message.tool_calls:
+            tool_name = tool_call['name'].lower()
+            selected_tool = {
+                "delete_file_google": delete_file_google
+            }.get(tool_name)
+            tool_msg = selected_tool.invoke(tool_call)
+            tool_message.append(tool_msg)
+            print('tool msg --------> ', tool_msg.content)
+        return tool_message
 
 @tool
 def sharing_file(query, session_id):
@@ -141,7 +148,7 @@ def call_langchain_with_history(query, session_id, user_id):
                 continue
 
     system_msg = SystemMessage(content=(
-            "You are a helpful assistant. You will see past messages labeled as [history]. "
+            "Your name is Casper(in Thai they call you 'แคสเปอร์').You are a helpful assistant. You will see past messages labeled as [history]. "
             "Focus only on the message labeled [current] to determine your response. "
             "Do NOT perform tool calls unless the [current] message clearly requests an action like upload, delete, or list files." 
             "If tool calls have parameter session_id use this: " + session_id + "and If tool calls have parameter session_id use this: " + user_id
