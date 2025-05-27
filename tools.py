@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
     def add_user_message(self, message: str):
         self.collection.insert_one({
-            "group_id": self.group_id,
+            "session_id": self.session_id,
             "type": "human",
             "content": message,
             "created_at": datetime.now(timezone(timedelta(hours = 7))).isoformat()
@@ -19,14 +19,14 @@ class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
 
     def add_ai_message(self, message: str):
         self.collection.insert_one({
-            "group_id": self.group_id,
+            "session_id": self.session_id,
             "type": "ai",
             "content":  message,
             "created_at": datetime.now(timezone(timedelta(hours = 7))).isoformat()
         })
 
     def get_history(self):
-        return self.collection.find()
+        return self.collection.find({"session_id": self.session_id})
 
 load_dotenv()
 
@@ -39,7 +39,7 @@ llm = ChatOpenAI(
 
 def save_conversation(query, group_id):
     chat_history = TimestampedMongoDBChatMessageHistory(
-        group_id=group_id,
+        session_id=group_id,
         connection_string="mongodb://localhost:27017/",
         database_name="historyDB_2",
         collection_name="chat"
@@ -59,7 +59,7 @@ def upload_file(query, group_id):
     llm_with_upload_tools = llm.bind_tools(upload_tools)
 
     file_data = get_files_data()
-    messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
+    messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data) + ". This is group id:" + group_id)]
     ai_message =  llm_with_upload_tools.invoke(messages)
     messages.append(ai_message)
 
@@ -81,8 +81,10 @@ def delete_file(query, group_id):
     delete_tools = [delete_file_google]
     llm_with_delete_tools = llm.bind_tools(delete_tools)
 
-    file_data = show_files()
-    messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
+    file_data = show_files(group_id)
+    if not file_data:
+        return ["You don't have any file in drive right now"]
+    messages = [HumanMessage(query + ' this is a list of metadata of file:' + str(file_data))]
     ai_message =  llm_with_delete_tools.invoke(messages)
     tool_message = []
 
@@ -109,7 +111,7 @@ def sharing_file(query, group_id):
     sharing_tools = [sharing_file_google]
     llm_with_sharing_tools = llm.bind_tools(sharing_tools)
 
-    file_data = show_files()
+    file_data = show_files(group_id)
     messages = [HumanMessage(query + ' this is a list of metadata of file' + str(file_data))]
     ai_message =  llm_with_sharing_tools.invoke(messages)
     tool_message = []
@@ -131,7 +133,7 @@ def call_langchain_with_history(query, group_id, user_id):
     llm_with_tools = llm.bind_tools(main_tools)
 
     chat_history = TimestampedMongoDBChatMessageHistory(
-        group_id=group_id,
+        session_id=group_id,
         connection_string="mongodb://localhost:27017/",
         database_name="historyDB_2",
         collection_name="chat"

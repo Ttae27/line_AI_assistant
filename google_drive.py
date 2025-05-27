@@ -13,18 +13,14 @@ credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCO
 
 service = build('drive', 'v3', credentials=credentials)
 
-def upload_file_drive(file: bytearray, file_name: str, about: str):
-    """Upload file 
-
-    Args:
-        file: bytearray of file
-        file_name: string of file name 
-        about: string of summarized of this file 
-    """
+def upload_file_drive(file: bytearray, file_name: str, about: str, group_id):
     try:
         file_metadata = {
             "name": file_name,
             "description": about,
+            "properties": {
+                "group_id": group_id
+            }
         }
         mimetype = 'application/' + file_name.split('.')[1]
         media = MediaIoBaseUpload(io.BytesIO(file), mimetype)
@@ -42,27 +38,29 @@ def upload_file_drive(file: bytearray, file_name: str, about: str):
     return file.get("id")
 
 @tool
-def upload_file_tool(filename: str):
+def upload_file_tool(filename: str, group_id):
     """
         Upload just one file from user query 
 
         Args:
-        filename: name of file
+            filename: name of file
+            group_id: string of group ID
     """
     data = db.files.files.find_one({"filename": filename})
     fs_id = data['_id']
     out_data = fs.get(fs_id).read()
-    file_id = upload_file_drive(bytearray(out_data), filename, data['about'])
+    file_id = upload_file_drive(bytearray(out_data), filename, data['about'], group_id)
     if file_id:
         return "เซฟไฟล์เรียบร้อย"
     return 'error'
 
 @tool
 def sharing_file_google(file_id: str):
-    """ให้ลิ้งของไฟล์เมื่อขอลิ้ง
+    """
+        ให้ลิ้งของไฟล์เมื่อขอลิ้ง
 
-    Args:
-        file_id: string of file ID
+        Args:
+            file_id: string of file ID
     """
     request_body = {
         'role': 'reader',
@@ -81,26 +79,25 @@ def sharing_file_google(file_id: str):
     return response_share_link ['webViewLink']
 
 @tool
-def show_files_tool():
+def show_files_tool(group_id):
     """
         โชว์ไฟล์ใน google drive ไม่ต้องให้ลิ้งค์
+        Args:
+            group_id: string of group ID
 
-        return id name mimeType createdTime and description
+        return id name mimeType createdTime description 
     """
     results = service.files().list(
         q=None,
         pageSize=1000,
         fields="nextPageToken, files(id, name, mimeType, createdTime, description, properties)"
     ).execute()
-    items = results.get('files', [])
+    items = []
+    for item in results.get('files', []):
+        if item['properties']['group_id'] == group_id:
+            items.append(item)
 
     return items
-    # items = []
-    # for item in results.get('files', []):
-    #     if item['properties']['group_id'] == group_id:
-    #         items.append(item)
-
-    # return items
 
 @tool
 def delete_file_google(file_id):
@@ -115,12 +112,15 @@ def delete_file_google(file_id):
 
     return 'delete successfully'
 
-def show_files():
+def show_files(group_id):
     results = service.files().list(
         q=None,
         pageSize=1000,
-        fields="nextPageToken, files(id, name, mimeType, createdTime, description)"
+        fields="nextPageToken, files(id, name, mimeType, createdTime, description, properties)"
     ).execute()
-    items = results.get('files', [])
+    items = []
+    for item in results.get('files', []):
+        if item['properties']['group_id'] == group_id:
+            items.append(item)
 
     return items

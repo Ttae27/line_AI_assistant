@@ -70,7 +70,7 @@ def handle_file(event: MessageEvent):
             metadata = {"groupid": event.source.group_id, "userid": event.source.user_id, "about": summarized(content_response, ext, file_name)}
             upload_file(content_response, file_name, metadata)
             chat_history = TimestampedMongoDBChatMessageHistory(
-                group_id=event.source.group_id + event.source.user_id,
+                session_id=event.source.group_id,
                 connection_string="mongodb://localhost:27017/",
                 database_name="historyDB_2",
                 collection_name="chat"
