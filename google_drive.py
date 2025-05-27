@@ -97,7 +97,7 @@ def show_files_tool():
     return items
     # items = []
     # for item in results.get('files', []):
-    #     if item['properties']['group_id'] == session_id:
+    #     if item['properties']['group_id'] == group_id:
     #         items.append(item)
 
     # return items

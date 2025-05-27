@@ -11,7 +11,7 @@ from datetime import datetime, timezone, timedelta
 class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
     def add_user_message(self, message: str):
         self.collection.insert_one({
-            "session_id": self.session_id,
+            "group_id": self.group_id,
             "type": "human",
             "content": message,
             "created_at": datetime.now(timezone(timedelta(hours = 7))).isoformat()
@@ -19,7 +19,7 @@ class TimestampedMongoDBChatMessageHistory(MongoDBChatMessageHistory):
 
     def add_ai_message(self, message: str):
         self.collection.insert_one({
-            "session_id": self.session_id,
+            "group_id": self.group_id,
             "type": "ai",
             "content":  message,
             "created_at": datetime.now(timezone(timedelta(hours = 7))).isoformat()
@@ -37,9 +37,9 @@ llm = ChatOpenAI(
     temperature=0
 )
 
-def save_conversation(query, session_id):
+def save_conversation(query, group_id):
     chat_history = TimestampedMongoDBChatMessageHistory(
-        session_id=session_id,
+        group_id=group_id,
         connection_string="mongodb://localhost:27017/",
         database_name="historyDB_2",
         collection_name="chat"
@@ -47,13 +47,13 @@ def save_conversation(query, session_id):
     chat_history.add_user_message(query)
 
 @tool
-def upload_file(query, session_id):
+def upload_file(query, group_id):
     """
         Upload file from MongoDB to Google drive 
 
         Args:
             query: string of user query
-            session_id: session_id
+            group_id: group_id
     """
     upload_tools = [upload_file_tool]
     llm_with_upload_tools = llm.bind_tools(upload_tools)
@@ -70,13 +70,13 @@ def upload_file(query, session_id):
         return tool_msg
 
 @tool
-def delete_file(query, session_id):
+def delete_file(query, group_id):
     """
         ลบไฟล์ใน google drive 
 
         Args:
             query: คำสั่งจากผู้ใช้ เช่น "ลบไฟล์ล่าสุด"
-            session_id: session_id
+            group_id: group_id
     """
     delete_tools = [delete_file_google]
     llm_with_delete_tools = llm.bind_tools(delete_tools)
@@ -98,13 +98,13 @@ def delete_file(query, session_id):
         return tool_message
 
 @tool
-def sharing_file(query, session_id):
+def sharing_file(query, group_id):
     """
         ให้ลิ้งของไฟล์เมื่อขอลิ้งใน google drive 
 
         Args:
             query: คำสั่งจากผู้ใช้ เช่น "ขอลิ้งไฟล์ล่าสุด"
-            session_id: session_id
+            group_id: group_id
     """
     sharing_tools = [sharing_file_google]
     llm_with_sharing_tools = llm.bind_tools(sharing_tools)
@@ -126,12 +126,12 @@ def sharing_file(query, session_id):
             print('tool msg --------> ', tool_msg.content)
         return tool_message
 
-def call_langchain_with_history(query, session_id, user_id):
+def call_langchain_with_history(query, group_id, user_id):
     main_tools = [show_files_tool, delete_file, upload_file, sharing_file]
     llm_with_tools = llm.bind_tools(main_tools)
 
     chat_history = TimestampedMongoDBChatMessageHistory(
-        session_id=session_id,
+        group_id=group_id,
         connection_string="mongodb://localhost:27017/",
         database_name="historyDB_2",
         collection_name="chat"
@@ -151,7 +151,7 @@ def call_langchain_with_history(query, session_id, user_id):
             "Your name is Casper(in Thai they call you 'แคสเปอร์').You are a helpful assistant. You will see past messages labeled as [history]. "
             "Focus only on the message labeled [current] to determine your response. "
             "Do NOT perform tool calls unless the [current] message clearly requests an action like upload, delete, or list files." 
-            "If tool calls have parameter session_id use this: " + session_id + "and If tool calls have parameter session_id use this: " + user_id
+            "If tool calls have parameter group_id use this: " + group_id + "and If tool calls have parameter user_id use this: " + user_id
         ))
 
     user_msg = HumanMessage(content="[current] by user: " + query)
