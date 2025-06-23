@@ -1,7 +1,8 @@
 import os
 import uvicorn
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, HTTPException, Header
+from fastapi import FastAPI, Request, HTTPException, Header, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from linebot.v3 import WebhookHandler
 from linebot.v3.exceptions import InvalidSignatureError
 from linebot.v3.webhooks import MessageEvent, TextMessageContent, FileMessageContent 
@@ -13,13 +14,20 @@ from linebot.v3.messaging import (
     TextMessage, 
     MessagingApiBlob
 )
-
-from sum_docs import summarized
 from response_message import response_message
-from mongo import upload_file, get_file_data
-from tools import TimestampedMongoDBChatMessageHistory
+from service.sum_docs import summarized
+from service.mongo import upload_file
+from models.mongo import TimestampedMongoDBChatMessageHistory
+from rag.embeded import embeded_to_chroma
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 load_dotenv(override=True)
 
@@ -69,13 +77,8 @@ def handle_file(event: MessageEvent):
 
             metadata = {"groupid": event.source.group_id, "userid": event.source.user_id, "about": summarized(content_response, ext, file_name)}
             upload_file(content_response, file_name, metadata)
-            chat_history = TimestampedMongoDBChatMessageHistory(
-                session_id=event.source.group_id,
-                connection_string="mongodb://localhost:27017/",
-                database_name="historyDB_2",
-                collection_name="chat"
-            )
-            chat_history.add_user_message(f'เซฟไฟล์ {file_name} แล้ว วันที่ {get_file_data(file_name)['uploadDate']}')
+            chat_history = TimestampedMongoDBChatMessageHistory(session_id=event.source.group_id,)
+            chat_history.add_user_message(f'Save file to MongoDB: {file_name}')
 
         except:
             messaging_api = MessagingApi(api_client)
@@ -85,6 +88,12 @@ def handle_file(event: MessageEvent):
                     messages=[TextMessage(text=f"error to save file: {file_name}")]
                 )
             )
+
+@app.post('/upload')
+async def get_pdf(file: UploadFile):
+    content = await file.read()
+    result = embeded_to_chroma(content)
+    return {'message': result}
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0")

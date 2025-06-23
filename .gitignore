@@ -1,4 +1,8 @@
-.env
+*/__pycache__
+__pycache__
 test*
+.env
 line-chat-bot-softnix-ff77b1c1d463.json
-__pycache__/
+service/format_metadata.py
+front/node_modules
+chroma/

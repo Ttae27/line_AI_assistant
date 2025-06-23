@@ -3,7 +3,7 @@ import fitz
 import openpyxl
 from docx import Document
 from pptx import Presentation
-from tools import llm
+from models.llm import llm
 from langchain_core.messages import HumanMessage
 
 def extract_text_from_pdf_bytes(file_bytes: bytearray) -> str:
